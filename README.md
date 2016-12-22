@@ -2,7 +2,8 @@
 Simple Neural Network for ES6
 
 ## example
-<pre><code>//  logcial AND pattern
+```javascript
+//  logcial AND pattern
 let x = MatrixF32.from([[0,0],[0,1],[1,0],[1,1]])  // 4 X 2 (nSample X featureDim)
 let y = MatrixF32.from([[1,0],[0,1],[0,1],[0,1]])  // 4 X 2 (nSample X targetDim)
 
@@ -22,4 +23,4 @@ console.log(p.toString())
 
 let accuracy = net.evaluate(x, y)
 console.log(accuracy)
-</code></pre>
+```
