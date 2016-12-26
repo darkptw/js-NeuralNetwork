@@ -3,7 +3,7 @@ Simple Neural Network for ES6
 
 ## example
 ```javascript
-//  logcial AND pattern
+//  logcial OR pattern
 let x = MatrixF32.from([[0,0],[0,1],[1,0],[1,1]])  // 4 X 2 (nSample X featureDim)
 let y = MatrixF32.from([[1,0],[0,1],[0,1],[0,1]])  // 4 X 2 (nSample X targetDim)
 
