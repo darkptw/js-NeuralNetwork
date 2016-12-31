@@ -19,7 +19,7 @@ let accuracy = net.evaluate(x, y)
 console.log('Training Accuracy = ' + accuracy)
 ```
 
-## result
+## example output
 ```
 [Epoch 1] loss: 223.96560394763947
 [Epoch 2] loss: 195.08037796616554
