@@ -13,10 +13,10 @@ net.addLayer(new Tanh())
 net.addLayer(new FullyConnected(200, 10))
 net.setLoss(new SoftmaxAndCrossEntropy())
 
-net.fit(x, y, 0.05, 20, 5)
+net.fit(x, y, 0.05, 20, 5)    // (input, target, learning rate, num of epoch, batch size)
 
 let accuracy = net.evaluate(x, y)
-console.log(accuracy)
+console.log('Traning Accuracy = ' + accuracy)
 ```
 
 ## result
@@ -41,5 +41,5 @@ console.log(accuracy)
 [Epoch 18] loss: 107.57127949222922
 [Epoch 19] loss: 102.80002194084227
 [Epoch 20] loss: 100.04465127177536
-0.8
+Traning Accuracy = 0.8
 ```
