@@ -19,6 +19,10 @@ class Util {
         return new Tensor(shape).map(e => Math.random(e), true)
     }
     
+    static sqrt(x) {
+        return x.map(e => Math.sqrt(e))
+    }
+    
     static log(x) {
         return x.map(e => Math.log(e))
     }
@@ -42,7 +46,7 @@ class Matrix {
         if(a.rank != 2 || b.rank != 2)
             throw "not matrix(2d tensor)"
         if(a.shape[1] != b.shape[0])
-            throw "left cols and right rows not equal"
+            throw "left cols and right rows not equal " + a.shape + ", " + b.shape
 
         let dotted = new Tensor([a.shape[0], b.shape[1]])
         for(let r=0; r<dotted.shape[0]; r++) {
@@ -57,7 +61,7 @@ class Matrix {
 
     static transpose(mat) {
         if(mat.rank != 2)
-            throw "not matrix(2d tensor)"
+            throw "not matrix(2d tensor) " + mat.shape
 
         let t = new Tensor([mat.shape[1], mat.shape[0]])
         for(let r=0; r<t.shape[0]; r++)
@@ -105,7 +109,7 @@ class Tensor {
     reshape(newShape) {
         let newLength = newShape.reduce((a,b) => a*b, 1)
         if(newLength != this.length)
-            throw "invalid shape"
+            throw "invalid shape " + this.shape + ", " + newShape
 
         this.shape = newShape
         return this
@@ -162,7 +166,7 @@ class Tensor {
     elementWise(func, right, inplace = false) {
         if(inplace) {
             if(!Util.arrayEquals(this.shape, right.shape))
-                throw "shape not equal"
+                throw "shape not equal " + this.shape + ", " + right.shape
 
             for(let i=0; i<this.length; ++i)
                 this.data[i] = func(this.data[i], right.data[i])
@@ -177,7 +181,7 @@ class Tensor {
         }
 
         if(!Tensor.isBroadcastable(this, right))
-            throw "cannot broadcast"
+            throw "cannot broadcast " + this.shape + ", " + right.shape
 
         let newShape = new Array(this.rank)
         for(let i=0; i<this.rank; ++i)
@@ -351,7 +355,8 @@ class Tensor {
 class Layer {
     forward(input) {}
     backward(gradient) {}
-    update(learningRate) {}
+    update() {}
+    setOptimizer(optimizer) {}
 }
 
 class FullyConnected extends Layer {
@@ -370,13 +375,78 @@ class FullyConnected extends Layer {
     }
 
     backward(g) {
-        this.g = g
+        this.gw = Matrix.dot(Matrix.T(this.x), g)
+        this.gb = g.sum(0)
         return Matrix.dot(g, Matrix.T(this.weight))
     }
 
-    update(lr) {
-        this.bias.sub( this.g.mul(lr, true).sum(0), true )
-        this.weight.sub( Matrix.dot(Matrix.T(this.x), this.g).mul(lr, true), true )
+    update() {
+        this.optimizer.update([this.weight, this.bias], [this.gw, this.gb])
+    }
+    
+    setOptimizer(optimizer) {
+        this.optimizer = optimizer
+    }
+}
+
+class Convolution extends Layer {
+    constructor(inputShape, kernelShape) {
+        super()
+        this.inputShape = inputShape
+        this.kernelShape = kernelShape
+        this.outputShape = [inputShape[0]-kernelShape[0]+1, inputShape[1]-kernelShape[1]+1, kernelShape[2]]
+        
+        this.weight = new Tensor([1, kernelShape[0], kernelShape[1], inputShape[2], kernelShape[2]])
+            .map(e => (Math.random()*2 - 1) / Math.sqrt(inputShape.reduce((a,b) => a*b, 1)), true)
+        this.bias = new Tensor([1, 1, 1, 1, kernelShape[2]]).map(e => Math.random()*2 - 1, true)
+    }
+    
+    forward(x) {
+        this.x = x
+        let output = new Tensor([x.shape[0]].concat(this.outputShape))
+        let range = new Array(x.rank).fill([])
+        for(let r=0; r<this.outputShape[0]; r++) {
+            range[1] = [r, r+this.kernelShape[0]]
+            for(let c=0; c<this.outputShape[1]; c++) {
+                range[2] = [c, c+this.kernelShape[1]]
+                let part = x.slice(range)
+                part.reshape(part.shape.concat(1))
+                let z = part.mul(this.weight).sum(1).sum(2).sum(3).add(this.bias)
+                
+                for(let i=0; i<x.shape[0]; ++i)
+                    for(let ch=0; ch<this.outputShape[2]; ++ch)
+                        output.data[output.toFlatIndex([i, r, c, ch])] = z.data[i*this.outputShape[2]+ch]
+            }
+        }
+        return output
+    }
+    
+    backward(g) {
+        this.gw = Tensor.zerosLike(this.weight)
+        this.gb = g.sum(0).sum(1).sum(2).reshape(this.bias.shape)
+        let xRange = new Array(this.x.rank).fill([])
+        let gRange = new Array(g.rank).fill([])
+        for(let r=0; r<this.outputShape[0]; r++) {
+            xRange[1] = [r, r+this.kernelShape[0]]
+            gRange[1] = [r]
+            for(let c=0; c<this.outputShape[1]; c++) {
+                xRange[2] = [c, c+this.kernelShape[1]]
+                gRange[2] = [c]
+                let xPart = this.x.slice(xRange)
+                xPart.reshape(xPart.shape.concat(1))
+                let gPart = g.slice(gRange)
+                gPart.reshape([g.shape[0], 1, 1, 1, g.shape[3]])
+                this.gw.add( xPart.mul(gPart).sum(0).reshape(this.gw.shape), true )
+            }
+        }
+    }
+    
+    update() {
+        this.optimizer.update([this.weight, this.bias], [this.gw, this.gb])
+    }
+    
+    setOptimizer(optimizer) {
+        this.optimizer = optimizer
     }
 }
 
@@ -399,6 +469,22 @@ class Tanh extends Layer {
 
     backward(g) {
         return g.mul( this.z.pow(2).neg(true).add(1, true) )
+    }
+}
+
+class Reshape extends Layer {
+    constructor(inputShape, outputShape) {
+        super()
+        this.inputShape = inputShape
+        this.outputShape = outputShape
+    }
+    
+    forward(x) {
+        return x.copy().reshape([x.shape[0]].concat(this.outputShape))
+    }
+    
+    backward(g) {
+        return g.copy().reshape([g.shape[0]].concat(this.inputShape))
     }
 }
 
@@ -443,6 +529,58 @@ class SoftmaxAndCrossEntropy extends Loss {
     }
 }
 
+class Optimizer {
+    constructor(learningRate) {
+        this.lr = learningRate
+    }
+    copy() {}
+    
+    update(parameters, gradients) {}
+}
+
+class Adam extends Optimizer {
+    constructor(lr, beta1=0.9, beta2=0.999) {
+        super(lr)
+        this.beta1 = beta1
+        this.beta2 = beta2
+    }
+    
+    copy() {
+        return new Adam(this.lr, this.beta1, this.beta2)
+    }
+    
+    update(ps, gs) {
+        if(!this.ms) {
+            this.ms = new Array(gs.length)
+            this.vs = new Array(gs.length)
+            
+            for(let i=0; i<gs.length; ++i) {
+                this.ms[i] = Tensor.zerosLike(gs[i])
+                this.vs[i] = Tensor.zerosLike(gs[i])
+            }
+        }
+        
+        for(let i=0; i<gs.length; ++i) {
+            this.ms[i].mul(this.beta1, true).add(gs[i].mul(1-this.beta1), true)
+            this.vs[i].mul(this.beta2, true).add(gs[i].pow(2).mul(1-this.beta2, true), true)
+            let mb = this.ms[i].div(1-this.beta1**(i+1))
+            let vb = this.vs[i].div(1-this.beta2**(i+1))
+            ps[i].sub(mb.mul(this.lr, true).div(Util.sqrt(vb).add(Number.EPSILON, true), true), true)
+        }
+    }
+}
+
+class Sgd extends Optimizer {
+    copy() {
+        return new Sgd(this.lr)
+    }
+    
+    update(ps, gs) {
+        for(let i=0; i<gs.length; ++i)
+            ps[i].sub(gs[i].mul(this.lr, true), true)
+    }
+}
+
 class SequentialNetwork {
     constructor() {
         this.layers = []
@@ -455,20 +593,25 @@ class SequentialNetwork {
     setLoss(loss) {
         this.loss = loss
     }
+    
+    setOptimizer(optimizer) {
+        this.layers.forEach(layer => layer.setOptimizer(optimizer.copy()))
+    }
 
-    fit(input, target, learningRate, nEpoch, batchSize, verbose=true) {
+    fit(input, target, nEpoch, batchSize, verbose=true) {
+        let batchRangeX = new Array(input.rank).fill([])
+        let batchRangeY = new Array(target.rank).fill([])
         for(let epoch=0; epoch<nEpoch; ++epoch) {
             let lossVal = 0
             for(let batchBegin=0; batchBegin<input.shape[0]; batchBegin+=batchSize) {
-                let batchRange = new Array(input.rank).fill([])
-                batchRange[0] = [batchBegin, Math.min(input.shape[0], batchBegin+batchSize)]
-                let x = input.slice(batchRange), y = target.slice(batchRange)
+                batchRangeX[0] = batchRangeY[0] = [batchBegin, Math.min(input.shape[0], batchBegin+batchSize)]
+                let x = input.slice(batchRangeX), y = target.slice(batchRangeY)
                 
                 this.layers.forEach(layer => x = layer.forward(x))
                 lossVal += this.loss.forward(x, y).sum()
                 let g = this.loss.backward()
                 this.layers.reverse().forEach(layer => g = layer.backward(g))
-                this.layers.reverse().forEach(layer => layer.update(learningRate))
+                this.layers.reverse().forEach(layer => layer.update())
             }
 
             if(verbose)
