@@ -3,8 +3,8 @@ Simple Neural Network for javascript (ES6)
 
 ## Logical Or example
 ```javascript
-let x = Tensor.from([0,0, 0,1, 1,0, 1,1]).reshape([4, 2])
-let y = Tensor.from([0, 1, 1, 1]).reshape([4, 1])
+let x = Tensor.from([0,0, 0,1, 1,0, 1,1]).reshape([4, 2]) // nSample X nFeature
+let y = Tensor.from([0, 1, 1, 1]).reshape([4, 1]) // nSample X 1
 
 let net = new SequentialNetwork()
 
@@ -35,8 +35,8 @@ Training Accuracy = 100%
 
 ## MNIST example
 ```javascript
-let x = Tensor.from(MNIST_100.X).div(255, true).reshape([100, 28*28])
-let y = Tensor.from(Util.toOnehot(MNIST_100.Y, 10)).reshape([100, 10])
+let x = Tensor.from(MNIST_100.X).div(255, true).reshape([100, 28*28]) // nSample X nFeature
+let y = Tensor.from(Util.toOnehot(MNIST_100.Y, 10)).reshape([100, 10]) // nSample X nCategory
 
 let net = new SequentialNetwork()
 
