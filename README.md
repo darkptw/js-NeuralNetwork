@@ -64,12 +64,12 @@ Training Accuracy = 100%
 
 ## MNIST example (CNN)
 ```javascript
-let x = Tensor.from(MNIST_100.X).div(255, true).reshape([100, 28, 28, 1])
-let y = Tensor.from(Util.toOnehot(MNIST_100.Y, 10)).reshape([100, 10])
+let x = Tensor.from(MNIST_100.X).div(255, true).reshape([100, 28, 28, 1]) // nSample X height X width X nChannel
+let y = Tensor.from(Util.toOnehot(MNIST_100.Y, 10)).reshape([100, 10]) // nSample X nCategory
 
 let net = new SequentialNetwork()
 	
-net.addLayer(new Convolution([28, 28, 1], [5, 5, 2]))
+net.addLayer(new Convolution([28, 28, 1], [5, 5, 2])) // image shape, kernel shape
 net.addLayer(new Tanh())
 net.addLayer(new Reshape([24, 24, 2], [24*24*2]))
 net.addLayer(new FullyConnected(24*24*2, 10))
