@@ -10,8 +10,9 @@ let net = new SequentialNetwork()
 
 net.addLayer(new FullyConnected(2, 1))
 net.setLoss(new SigmoidAndCrossEntropy())
+net.setOptimizer(new Adam(1))
 
-net.fit(x, y, 3, 5, 2) // (input, target, learning rate, num of epoch, batch size)
+net.fit(x, y, 5, 2) // (input, target, num of epoch, batch size)
 	
 console.log('Prediction = ' + net.predict(x).toString())
 
@@ -19,21 +20,21 @@ let accuracy = net.evaluate(x, y)
 console.log('Training Accuracy = ' + (accuracy*100) + '%')
 ```
 ```
-[Epoch 1] loss: 2.495827106758952
-[Epoch 2] loss: 2.1905609320238
-[Epoch 3] loss: 0.4799218690750422
-[Epoch 4] loss: 0.24883715630858205
-[Epoch 5] loss: 0.19734249857719988
+[Epoch 1] loss: 2.88749960064888
+[Epoch 2] loss: 1.247955984203145
+[Epoch 3] loss: 1.6632246683329868
+[Epoch 4] loss: 1.4022898312612142
+[Epoch 5] loss: 0.8140126581715776
 Prediction = [
-  [ 0.10700967907905579 ],
-  [ 0.9676132798194885 ],
-  [ 0.9830451607704163 ],
-  [ 0.9999307990074158 ]
+  [ 0.28458359837532043 ],
+  [ 0.999606192111969 ],
+  [ 0.9964053630828857 ],
+  [ 0.999999463558197 ]
 ]
 Training Accuracy = 100%
 ```
 
-## MNIST example
+## MNIST example (MLP)
 ```javascript
 let x = Tensor.from(MNIST_100.X).div(255, true).reshape([100, 28*28]) // nSample X nFeature
 let y = Tensor.from(Util.toOnehot(MNIST_100.Y, 10)).reshape([100, 10]) // nSample X nCategory
@@ -43,18 +44,49 @@ let net = new SequentialNetwork()
 net.addLayer(new FullyConnected(28*28, 200))
 net.addLayer(new Tanh())
 net.addLayer(new FullyConnected(200, 10))
-net.setLoss(new SoftmaxAndCrossEntropy())
 
-net.fit(x, y, 0.2, 5, 5) // (input, target, learning rate, num of epoch, batch size)
+net.setLoss(new SoftmaxAndCrossEntropy())
+net.setOptimizer(new Adam(0.01))
+
+net.fit(x, y, 5, 5) // (input, target, num of epoch, batch size)
 
 let accuracy = net.evaluate(x, y)
 console.log('Training Accuracy = ' + (accuracy*100) + '%')
 ```
 ```
-[Epoch 1] loss: 207.6040564700961
-[Epoch 2] loss: 72.34003535239026
-[Epoch 3] loss: 30.0361167822266
-[Epoch 4] loss: 11.531669068266638
-[Epoch 5] loss: 5.8979841276595835
+[Epoch 1] loss: 213.83740594188566
+[Epoch 2] loss: 80.41895973801638
+[Epoch 3] loss: 18.098858451086926
+[Epoch 4] loss: 20.713332781404915
+[Epoch 5] loss: 18.956331428320937
+Training Accuracy = 100%
+```
+
+## MNIST example (CNN)
+```javascript
+let x = Tensor.from(MNIST_100.X).div(255, true).reshape([100, 28, 28, 1])
+let y = Tensor.from(Util.toOnehot(MNIST_100.Y, 10)).reshape([100, 10])
+
+let net = new SequentialNetwork()
+	
+net.addLayer(new Convolution([28, 28, 1], [5, 5, 2]))
+net.addLayer(new Tanh())
+net.addLayer(new Reshape([24, 24, 2], [24*24*2]))
+net.addLayer(new FullyConnected(24*24*2, 10))
+
+net.setLoss(new SoftmaxAndCrossEntropy())
+net.setOptimizer(new Adam(0.01))
+
+net.fit(x, y, 5, 5)
+
+let accuracy = net.evaluate(x, y)
+console.log('Training Accuracy = ' + (accuracy*100) + '%')
+```
+```
+[Epoch 1] loss: 638.5471950154007
+[Epoch 2] loss: 139.21956138208245
+[Epoch 3] loss: 56.235091718045695
+[Epoch 4] loss: 18.131350956123214
+[Epoch 5] loss: 7.016586349996331
 Training Accuracy = 100%
 ```
