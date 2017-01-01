@@ -11,7 +11,7 @@ let net = new SequentialNetwork()
 net.addLayer(new FullyConnected(2, 1))
 net.setLoss(new SigmoidAndCrossEntropy())
 
-net.fit(x, y, 3, 5, 2)
+net.fit(x, y, 3, 5, 2) // (input, target, learning rate, num of epoch, batch size)
 	
 console.log('Prediction = ' + net.predict(x).toString())
 
@@ -45,7 +45,7 @@ net.addLayer(new Tanh())
 net.addLayer(new FullyConnected(200, 10))
 net.setLoss(new SoftmaxAndCrossEntropy())
 
-net.fit(x, y, 0.2, 5, 5)    // (input, target, learning rate, num of epoch, batch size)
+net.fit(x, y, 0.2, 5, 5) // (input, target, learning rate, num of epoch, batch size)
 
 let accuracy = net.evaluate(x, y)
 console.log('Training Accuracy = ' + (accuracy*100) + '%')
