@@ -14,23 +14,23 @@ class Util {
             newArr[i*nCategory + arr[i]] = 1
         return newArr
     }
-	
-	static random(shape) {
-		return new Tensor(shape).map(e => Math.random(e), true)
-	}
-	
-	static log(x) {
-		return x.map(e => Math.log(e))
-	}
     
-	static sigmoid(x) {
-		return x.map(e => 1 / (1 + Math.exp(-e)))
-	}
-	
-	static tanh(x) {
-		return x.map(e => Math.tanh(e))
-	}
-	
+    static random(shape) {
+        return new Tensor(shape).map(e => Math.random(e), true)
+    }
+    
+    static log(x) {
+        return x.map(e => Math.log(e))
+    }
+    
+    static sigmoid(x) {
+        return x.map(e => 1 / (1 + Math.exp(-e)))
+    }
+    
+    static tanh(x) {
+        return x.map(e => Math.tanh(e))
+    }
+    
     static softmax(x) {
         let expX = x.map(e => Math.exp(e))
         return expX.div( expX.sum(1).add(Number.EPSILON, true) )
@@ -65,10 +65,10 @@ class Matrix {
                 t.data[r*t.shape[1]+c] = mat.data[c*mat.shape[1]+r]
         return t
     }
-	
-	static T(mat) {
-		return Matrix.transpose(mat)
-	}
+    
+    static T(mat) {
+        return Matrix.transpose(mat)
+    }
 }
 
 class Tensor {
@@ -246,8 +246,8 @@ class Tensor {
     neg(inplace = false) {
         return this.map(e => -e, inplace)
     }
-	
-	abs(inplace = false) {
+    
+    abs(inplace = false) {
         return this.map(e => Math.abs(e), inplace)
     }
 
@@ -423,12 +423,12 @@ class SigmoidAndCrossEntropy extends Loss {
         this.z = Util.sigmoid(x)
         this.diff = this.z.sub(y)
         return y.neg().mul(Util.log(this.z), true).add(
-			y.sub(1).mul( Util.log(this.z.neg().add(1, true)), true ), true )
+            y.sub(1).mul( Util.log(this.z.neg().add(1, true)), true ), true )
     }
 
     backward() {
         return this.diff
-    }	
+    }    
 }
 
 class SoftmaxAndCrossEntropy extends Loss {
@@ -463,7 +463,7 @@ class SequentialNetwork {
                 let batchRange = new Array(input.rank).fill([])
                 batchRange[0] = [batchBegin, Math.min(input.shape[0], batchBegin+batchSize)]
                 let x = input.slice(batchRange), y = target.slice(batchRange)
-				
+                
                 this.layers.forEach(layer => x = layer.forward(x))
                 lossVal += this.loss.forward(x, y).sum()
                 let g = this.loss.backward()
@@ -482,17 +482,17 @@ class SequentialNetwork {
 
         if(this.loss instanceof SoftmaxAndCrossEntropy)
             return Util.softmax(x)
-		else if(this.loss instanceof SigmoidAndCrossEntropy)
-			return Util.sigmoid(x)
+        else if(this.loss instanceof SigmoidAndCrossEntropy)
+            return Util.sigmoid(x)
         return x
     }
 
     evaluate(input, target) {
-		if(this.loss instanceof SigmoidAndCrossEntropy) {
-			let absDiff = this.predict(input).sub(target, true).abs(true)
-			return absDiff.map(e => e<0.5, true).mean()
-		}
-		
+        if(this.loss instanceof SigmoidAndCrossEntropy) {
+            let absDiff = this.predict(input).sub(target, true).abs(true)
+            return absDiff.map(e => e<0.5, true).mean()
+        }
+        
         let p = this.predict(input).argmax(1)
         let t = target.argmax(1)
         return p.equal(t).mean()
