@@ -457,9 +457,9 @@ class SequentialNetwork {
     }
 
     evaluate(input, target) {
-        let pi = this.predict(input).argmax(1)
-        let ti = target.argmax(1)
-        return Tensor.equal(pi, ti).mean()
+        let p = this.predict(input).argmax(1)
+        let t = target.argmax(1)
+        return Tensor.equal(p, t).mean()
     }
 }
 
