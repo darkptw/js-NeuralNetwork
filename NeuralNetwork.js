@@ -18,7 +18,7 @@ class Util {
 
 class Matrix {
     static dot(a, b) {
-        if(a.shape.length != 2 || b.shape.length != 2)
+        if(a.rank != 2 || b.rank != 2)
             throw "not matrix(2d tensor)"
         if(a.shape[1] != b.shape[0])
             throw "left cols and right rows not equal"
@@ -35,7 +35,7 @@ class Matrix {
     }
 
     static transpose(mat) {
-        if(mat.shape.length != 2)
+        if(mat.rank != 2)
             throw "not matrix(2d tensor)"
 
         let transposed = new Tensor([mat.shape[1], mat.shape[0]])
