@@ -71,8 +71,10 @@ let net = new SequentialNetwork()
 	
 net.addLayer(new Convolution([28, 28, 1], [5, 5, 2])) // image shape, kernel shape
 net.addLayer(new Tanh())
-net.addLayer(new Reshape([24, 24, 2], [24*24*2]))
-net.addLayer(new FullyConnected(24*24*2, 10))
+net.addLayer(new Convolution([24, 24, 2], [5, 5, 3]))
+net.addLayer(new Tanh())
+net.addLayer(new Reshape([20, 20, 3], [20*20*3]))
+net.addLayer(new FullyConnected(20*20*3, 10))
 
 net.setLoss(new SoftmaxAndCrossEntropy())
 net.setOptimizer(new Adam(0.01))
@@ -83,10 +85,10 @@ let accuracy = net.evaluate(x, y)
 console.log('Training Accuracy = ' + (accuracy*100) + '%')
 ```
 ```
-[Epoch 1] loss: 638.5471950154007
-[Epoch 2] loss: 139.21956138208245
-[Epoch 3] loss: 56.235091718045695
-[Epoch 4] loss: 18.131350956123214
-[Epoch 5] loss: 7.016586349996331
-Training Accuracy = 100%
+[Epoch 1] loss: 478.9218714556846
+[Epoch 2] loss: 224.22441467690373
+[Epoch 3] loss: 54.15575810527514
+[Epoch 4] loss: 23.00490460639834
+[Epoch 5] loss: 20.197968472316845
+Training Accuracy = 99%
 ```
