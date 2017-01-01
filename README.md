@@ -18,8 +18,6 @@ console.log('Prediction = ' + net.predict(x).toString())
 let accuracy = net.evaluate(x, y)
 console.log('Training Accuracy = ' + (accuracy*100) + '%')
 ```
-
-## Logical Or example output
 ```
 [Epoch 1] loss: 2.495827106758952
 [Epoch 2] loss: 2.1905609320238
@@ -52,8 +50,6 @@ net.fit(x, y, 0.2, 5, 5)    // (input, target, learning rate, num of epoch, batc
 let accuracy = net.evaluate(x, y)
 console.log('Training Accuracy = ' + (accuracy*100) + '%')
 ```
-
-## MNIST example output
 ```
 [Epoch 1] loss: 207.6040564700961
 [Epoch 2] loss: 72.34003535239026
