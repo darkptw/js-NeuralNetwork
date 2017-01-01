@@ -11,7 +11,9 @@ let net = new SequentialNetwork()
 net.addLayer(new FullyConnected(2, 1))
 net.setLoss(new SigmoidAndCrossEntropy())
 
-net.fit(x, y, 1, 10, 4)    // (input, target, learning rate, num of epoch, batch size)
+net.fit(x, y, 3, 5, 2)
+	
+console.log('Prediction = ' + net.predict(x).toString())
 
 let accuracy = net.evaluate(x, y)
 console.log('Training Accuracy = ' + (accuracy*100) + '%')
@@ -19,16 +21,17 @@ console.log('Training Accuracy = ' + (accuracy*100) + '%')
 
 ## Logical Or example output
 ```
-[Epoch 1] loss: 2.936002790927887
-[Epoch 2] loss: 1.4656985439360142
-[Epoch 3] loss: 1.2658850327134132
-[Epoch 4] loss: 1.1337947361171246
-[Epoch 5] loss: 1.0291592609137297
-[Epoch 6] loss: 0.9418610222637653
-[Epoch 7] loss: 0.8677062541246414
-[Epoch 8] loss: 0.8039499772712588
-[Epoch 9] loss: 0.7485710242763162
-[Epoch 10] loss: 0.7000356866046786
+[Epoch 1] loss: 2.495827106758952
+[Epoch 2] loss: 2.1905609320238
+[Epoch 3] loss: 0.4799218690750422
+[Epoch 4] loss: 0.24883715630858205
+[Epoch 5] loss: 0.19734249857719988
+Prediction = [
+  [ 0.10700967907905579 ],
+  [ 0.9676132798194885 ],
+  [ 0.9830451607704163 ],
+  [ 0.9999307990074158 ]
+]
 Training Accuracy = 100%
 ```
 
