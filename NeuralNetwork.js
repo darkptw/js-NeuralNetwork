@@ -399,14 +399,18 @@ class SquaredError extends Loss {
 
 class SoftmaxAndCrossEntropy extends Loss {
     forward(x, y) {
-        let expX = x.map(e => Math.exp(e))
-        this.z = expX.div( expX.sum(1).add(Number.EPSILON, true) )
+        this.z = SoftmaxAndCrossEntropy.softmax(x)
         this.diff = this.z.sub(y)
         return y.neg().mul( this.z.map(e => Math.log(e)), true )
     }
 
     backward() {
         return this.diff
+    }
+    
+    static softmax(x) {
+        let expX = x.map(e => Math.exp(e))
+        return expX.div( expX.sum(1).add(Number.EPSILON, true) )
     }
 }
 
@@ -447,10 +451,8 @@ class SequentialNetwork {
         let x = input
         this.layers.forEach(layer => x = layer.forward(x))
 
-        if(this.loss instanceof SoftmaxAndCrossEntropy) {
-            let expX = x.map(e => Math.exp(e))
-            return expX.div( expX.sum(1).add(Number.EPSILON, true) )
-        }
+        if(this.loss instanceof SoftmaxAndCrossEntropy)
+            return SoftmaxAndCrossEntropy.softmax(x)
         return x
     }
 
