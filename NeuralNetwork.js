@@ -424,8 +424,11 @@ class Convolution extends Layer {
     backward(g) {
         this.gw = Tensor.zerosLike(this.weight)
         this.gb = g.sum(0).sum(1).sum(2).reshape(this.bias.shape)
+        let newG = Tensor.zeros([g.shape[0]].concat(this.inputShape))
+        
         let xRange = new Array(this.x.rank).fill([])
         let gRange = new Array(g.rank).fill([])
+        let newIndex = new Array(newG.rank).fill([])
         for(let r=0; r<this.outputShape[0]; r++) {
             xRange[1] = [r, r+this.kernelShape[0]]
             gRange[1] = [r]
@@ -437,8 +440,27 @@ class Convolution extends Layer {
                 let gPart = g.slice(gRange)
                 gPart.reshape([g.shape[0], 1, 1, 1, g.shape[3]])
                 this.gw.add( xPart.mul(gPart).sum(0).reshape(this.gw.shape), true )
+                
+                let newPart = gPart.mul(this.weight).sum(4)
+                newPart.reshape(newPart.shape.slice(0, newPart.rank-1))
+                let newPartFlatIndex = 0
+                for(let b=0; b<newPart.shape[0]; ++b) {
+                    newIndex[0] = [b]
+                    for(let kr=0; kr<newPart.shape[1]; ++kr) {
+                        newIndex[1] = [r+kr]
+                        for(let kc=0; kc<newPart.shape[2]; ++kc) {
+                            newIndex[2] = [c+kc]
+                            for(let ch=0; ch<newPart.shape[3]; ++ch) {
+                                newIndex[3] = [ch]
+                                newG.data[newG.toFlatIndex(newIndex)] = 
+                                    newPart.data[newPartFlatIndex++]
+                            }
+                        }
+                    }
+                }
             }
         }
+        return newG
     }
     
     update() {
