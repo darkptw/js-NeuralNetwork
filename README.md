@@ -4,7 +4,7 @@ Simple Neural Network for ES6
 ## example
 ```javascript
 let x = Tensor.from(MNIST_100.X).div(255, true).reshape([100, 28*28])
-let y = Tensor.from(Util.oneHot(MNIST_100.Y, 10)).reshape([100, 10])
+let y = Tensor.from(Util.toOnehot(MNIST_100.Y, 10)).reshape([100, 10])
 
 let net = new SequentialNetwork()
 
