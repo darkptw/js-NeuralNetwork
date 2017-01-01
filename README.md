@@ -1,5 +1,5 @@
 # js-NeuralNetwork
-Simple Neural Network for ES6
+Simple Neural Network for javascript (ES6)
 
 ## Logical Or example
 ```javascript
