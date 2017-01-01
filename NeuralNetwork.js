@@ -8,11 +8,32 @@ class Util {
         return true
     }
 
-    static oneHot(arr, nCategory) {
+    static toOnehot(arr, nCategory) {
         let newArr = new Uint8Array(arr.length * nCategory)
         for(let i=0; i<arr.length; ++i)
             newArr[i*nCategory + arr[i]] = 1
         return newArr
+    }
+	
+	static random(shape) {
+		return new Tensor(shape).map(e => Math.random(e), true)
+	}
+	
+	static log(x) {
+		return x.map(e => Math.log(e))
+	}
+    
+	static sigmoid(x) {
+		return x.map(e => 1 / (1 + Math.exp(-e)))
+	}
+	
+	static tanh(x) {
+		return x.map(e => Math.tanh(e))
+	}
+	
+    static softmax(x) {
+        let expX = x.map(e => Math.exp(e))
+        return expX.div( expX.sum(1).add(Number.EPSILON, true) )
     }
 }
 
@@ -38,12 +59,16 @@ class Matrix {
         if(mat.rank != 2)
             throw "not matrix(2d tensor)"
 
-        let transposed = new Tensor([mat.shape[1], mat.shape[0]])
-        for(let r=0; r<transposed.shape[0]; r++)
-            for(let c=0; c<transposed.shape[1]; ++c)
-                transposed.data[r*transposed.shape[1]+c] = mat.data[c*mat.shape[1]+r]
-        return transposed
+        let t = new Tensor([mat.shape[1], mat.shape[0]])
+        for(let r=0; r<t.shape[0]; r++)
+            for(let c=0; c<t.shape[1]; ++c)
+                t.data[r*t.shape[1]+c] = mat.data[c*mat.shape[1]+r]
+        return t
     }
+	
+	static T(mat) {
+		return Matrix.transpose(mat)
+	}
 }
 
 class Tensor {
@@ -221,6 +246,10 @@ class Tensor {
     neg(inplace = false) {
         return this.map(e => -e, inplace)
     }
+	
+	abs(inplace = false) {
+        return this.map(e => Math.abs(e), inplace)
+    }
 
     slice(rangePerAxis) {
         let range = rangePerAxis.slice()
@@ -311,19 +340,11 @@ class Tensor {
         return new Tensor(this.shape, this.data.slice())
     }
 
-    dot(right) {
-        return Matrix.dot(this, right)
-    }
+    equal(that) {
+        if(!Util.arrayEquals(this.shape, that.shape))
+            throw "shape not equal"
 
-    transpose() {
-        return Matrix.transpose(this)
-    }
-
-    static equal(tensorA, tensorB) {
-        if(!Util.arrayEquals(tensorA.shape, tensorB.shape))
-            throw "shape not equal " + tensorA.shape.toString() + " " + tensorB.shape
-
-        return tensorA.elementWise((a,b) => a==b, tensorB)
+        return this.elementWise((a,b) => a==b, that)
     }
 }
 
@@ -345,23 +366,23 @@ class FullyConnected extends Layer {
 
     forward(x) {
         this.x = x
-        return x.dot(this.weight).add(this.bias)
+        return Matrix.dot(x, this.weight).add(this.bias)
     }
 
     backward(g) {
         this.g = g
-        return g.dot(this.weight.transpose())
+        return Matrix.dot(g, Matrix.T(this.weight))
     }
 
     update(lr) {
         this.bias.sub( this.g.mul(lr, true).sum(0), true )
-        this.weight.sub( this.x.transpose().dot(this.g).mul(lr, true), true )
+        this.weight.sub( Matrix.dot(Matrix.T(this.x), this.g).mul(lr, true), true )
     }
 }
 
 class Sigmoid extends Layer {
     forward(x) {
-        this.z = x.map(e => 1 / (1 + Math.exp(-e)))
+        this.z = Util.sigmoid(x)
         return this.z
     }
 
@@ -372,7 +393,7 @@ class Sigmoid extends Layer {
 
 class Tanh extends Layer {
     forward(x) {
-        this.z = x.map(e => Math.tanh(e))
+        this.z = Util.tanh(x)
         return this.z
     }
 
@@ -397,20 +418,28 @@ class SquaredError extends Loss {
     }
 }
 
+class SigmoidAndCrossEntropy extends Loss {
+    forward(x, y) {
+        this.z = Util.sigmoid(x)
+        this.diff = this.z.sub(y)
+        return y.neg().mul(Util.log(this.z), true).add(
+			y.sub(1).mul( Util.log(this.z.neg().add(1, true)), true ), true )
+    }
+
+    backward() {
+        return this.diff
+    }	
+}
+
 class SoftmaxAndCrossEntropy extends Loss {
     forward(x, y) {
-        this.z = SoftmaxAndCrossEntropy.softmax(x)
+        this.z = Util.softmax(x)
         this.diff = this.z.sub(y)
         return y.neg().mul( this.z.map(e => Math.log(e)), true )
     }
 
     backward() {
         return this.diff
-    }
-    
-    static softmax(x) {
-        let expX = x.map(e => Math.exp(e))
-        return expX.div( expX.sum(1).add(Number.EPSILON, true) )
     }
 }
 
@@ -434,7 +463,7 @@ class SequentialNetwork {
                 let batchRange = new Array(input.rank).fill([])
                 batchRange[0] = [batchBegin, Math.min(input.shape[0], batchBegin+batchSize)]
                 let x = input.slice(batchRange), y = target.slice(batchRange)
-
+				
                 this.layers.forEach(layer => x = layer.forward(x))
                 lossVal += this.loss.forward(x, y).sum()
                 let g = this.loss.backward()
@@ -452,14 +481,21 @@ class SequentialNetwork {
         this.layers.forEach(layer => x = layer.forward(x))
 
         if(this.loss instanceof SoftmaxAndCrossEntropy)
-            return SoftmaxAndCrossEntropy.softmax(x)
+            return Util.softmax(x)
+		else if(this.loss instanceof SigmoidAndCrossEntropy)
+			return Util.sigmoid(x)
         return x
     }
 
     evaluate(input, target) {
+		if(this.loss instanceof SigmoidAndCrossEntropy) {
+			let absDiff = this.predict(input).sub(target, true).abs(true)
+			return absDiff.map(e => e<0.5, true).mean()
+		}
+		
         let p = this.predict(input).argmax(1)
         let t = target.argmax(1)
-        return Tensor.equal(p, t).mean()
+        return p.equal(t).mean()
     }
 }
 
