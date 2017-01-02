@@ -14,31 +14,31 @@ class Util {
             newArr[i*nCategory + arr[i]] = 1
         return newArr
     }
-    
+
     static random(shape) {
         return new Tensor(shape).map(e => Math.random(e), true)
     }
-    
+
     static sqrt(x, inplace = false) {
         return x.map(e => Math.sqrt(e), inplace)
     }
-    
+
     static abs(x, inplace = false) {
         return x.map(e => Math.abs(e), inplace)
     }
-    
+
     static log(x, inplace = false) {
         return x.map(e => Math.log(e), inplace)
     }
-    
+
     static sigmoid(x, inplace = false) {
         return x.map(e => 1 / (1 + Math.exp(-e)), inplace)
     }
-    
+
     static tanh(x, inplace = false) {
         return x.map(e => Math.tanh(e), inplace)
     }
-    
+
     static softmax(x, inplace = false) {
         let expX = x.map(e => Math.exp(e), inplace)
         return expX.div( expX.sum(1).add(Number.EPSILON, true) )
@@ -73,7 +73,7 @@ class Matrix {
                 t.data[r*t.shape[1]+c] = mat.data[c*mat.shape[1]+r]
         return t
     }
-    
+
     static T(mat) {
         return Matrix.transpose(mat)
     }
@@ -99,10 +99,10 @@ class Tensor {
     static from(data) {
         return new Tensor([data.length], Float32Array.from(data))
     }
-	
-	static of(...args) {
-		return Tensor.from(args)
-	}
+
+    static of(...args) {
+        return Tensor.from(args)
+    }
 
     static zeros(shape) {
         return new Tensor(shape)
@@ -168,53 +168,53 @@ class Tensor {
         }
         return true
     }
-	
-	static _broadcastIterator(a, b) {
-		return {
-			tensorA: a, tensorB: b,
-			indexA: new Int32Array(a.rank), indexB: new Int32Array(b.rank),
-			flatIndexA: 0, flatIndexB: 0,
-			endFlag: false,
-			
-			hasNext() {
-				return !this.endFlag
-			},
-			
-			next() {
-				++this.indexA[this.tensorA.rank-1]
-				++this.indexB[this.tensorB.rank-1]
 
-				for(let i=this.tensorA.rank-1; i>=1; --i) {
-					if(this.indexA[i] == this.tensorA.shape[i] && 
-						this.indexB[i] == this.tensorB.shape[i]) {
-						++this.indexA[i-1]
-						++this.indexB[i-1]
-					}
+    static _broadcastIterator(a, b) {
+        return {
+            tensorA: a, tensorB: b,
+            indexA: new Int32Array(a.rank), indexB: new Int32Array(b.rank),
+            flatIndexA: 0, flatIndexB: 0,
+            endFlag: false,
 
-					this.indexA[i] %= this.tensorA.shape[i]
-					this.indexB[i] %= this.tensorB.shape[i]
-				}
-				
-				if(this.indexA[0] == this.tensorA.shape[0] && 
-					this.indexB[0] == this.tensorB.shape[0])
-					this.endFlag = true
-					
-				this.indexA[0] %= this.tensorA.shape[0]
-				this.indexB[0] %= this.tensorB.shape[0]
-				this.flatIndexA = this.tensorA.toFlatIndex(this.indexA)
-				this.flatIndexB = this.tensorB.toFlatIndex(this.indexB)
-			},
-			
-			get() {
-				return [this.tensorA.data[this.flatIndexA], this.tensorB.data[this.flatIndexB]]
-			},
-			
-			set([valueA, valueB]) {
-				this.tensorA.data[this.flatIndexA] = valueA
-				this.tensorB.data[this.flatIndexB] = valueB
-			}
-		}
-	}
+            hasNext() {
+                return !this.endFlag
+            },
+
+            next() {
+                ++this.indexA[this.tensorA.rank-1]
+                ++this.indexB[this.tensorB.rank-1]
+
+                for(let i=this.tensorA.rank-1; i>=1; --i) {
+                    if(this.indexA[i] == this.tensorA.shape[i] &&
+                        this.indexB[i] == this.tensorB.shape[i]) {
+                        ++this.indexA[i-1]
+                        ++this.indexB[i-1]
+                    }
+
+                    this.indexA[i] %= this.tensorA.shape[i]
+                    this.indexB[i] %= this.tensorB.shape[i]
+                }
+
+                if(this.indexA[0] == this.tensorA.shape[0] &&
+                    this.indexB[0] == this.tensorB.shape[0])
+                    this.endFlag = true
+
+                this.indexA[0] %= this.tensorA.shape[0]
+                this.indexB[0] %= this.tensorB.shape[0]
+                this.flatIndexA = this.tensorA.toFlatIndex(this.indexA)
+                this.flatIndexB = this.tensorB.toFlatIndex(this.indexB)
+            },
+
+            get() {
+                return [this.tensorA.data[this.flatIndexA], this.tensorB.data[this.flatIndexB]]
+            },
+
+            set([valueA, valueB]) {
+                this.tensorA.data[this.flatIndexA] = valueA
+                this.tensorB.data[this.flatIndexB] = valueB
+            }
+        }
+    }
 
     elementWise(func, right, inplace = false) {
         if(inplace) {
@@ -231,23 +231,23 @@ class Tensor {
 
         if(!Tensor.isBroadcastable(this, right))
             throw "cannot broadcast " + this.shape + ", " + right.shape
-		
-		let newShape = new Array(this.rank)
+
+        let newShape = new Array(this.rank)
         for(let i=0; i<this.rank; ++i)
-            newShape[i] = this.shape[i] == right.shape[i] ? 
+            newShape[i] = this.shape[i] == right.shape[i] ?
                 this.shape[i] : this.shape[i] * right.shape[i]
         let result = new Tensor(newShape)
-		
-		let resultIter = result.iterator()
-		let bcIter = Tensor._broadcastIterator(this, right)
-		while(bcIter.hasNext()) {
-			let [valA, valB] = bcIter.get()
-			resultIter.set(func(valA, valB))
-			resultIter.next()
-			bcIter.next()
-		}
-		return result
-	}
+
+        let resultIter = result.iterator()
+        let bcIter = Tensor._broadcastIterator(this, right)
+        while(bcIter.hasNext()) {
+            let [valA, valB] = bcIter.get()
+            resultIter.set(func(valA, valB))
+            resultIter.next()
+            bcIter.next()
+        }
+        return result
+    }
 
     add(right, inplace = false) {
         if(right instanceof Tensor)
@@ -281,16 +281,16 @@ class Tensor {
         return this.map(e => -e, inplace)
     }
 
-    slice(rangePerAxis) {		
+    slice(rangePerAxis) {
         let range = this._toConcreteRange(rangePerAxis)
-        let sliced = new Tensor(range.map(r => r[1]-r[0]))		
-		let slicedIter = sliced.iterator(), iter = this.rangeIterator(range)
-		
-		while(slicedIter.hasNext()) {
-			slicedIter.set(iter.get())
-			slicedIter.next()
-			iter.next()
-		}
+        let sliced = new Tensor(range.map(r => r[1]-r[0]))
+        let slicedIter = sliced.iterator(), iter = this.rangeIterator(range)
+
+        while(slicedIter.hasNext()) {
+            slicedIter.set(iter.get())
+            slicedIter.next()
+            iter.next()
+        }
         return sliced
     }
 
@@ -303,14 +303,14 @@ class Tensor {
         let result = this.slice(range)
         for(let i=1; i<this.shape[axis]; ++i) {
             range[axis] = [i]
-			let resultIter = result.iterator()
-			let iter = this.rangeIterator(range)
-			
-			while(resultIter.hasNext()) {
-				resultIter.set(resultIter.get()+iter.get())
-				resultIter.next()
-				iter.next()
-			}
+            let resultIter = result.iterator()
+            let iter = this.rangeIterator(range)
+
+            while(resultIter.hasNext()) {
+                resultIter.set(resultIter.get()+iter.get())
+                resultIter.next()
+                iter.next()
+            }
         }
         return result
     }
@@ -320,79 +320,79 @@ class Tensor {
             return this.sum() / this.length
         return this.sum(axis).div(this.shape[axis], true)
     }
-	
-	iterator() {
-		return {
-			tensor: this,
-			flatIndex: 0,
-			
-			hasNext() {
-				return this.flatIndex < this.tensor.length
-			},
-			
-			next() {
-				++this.flatIndex
-			},
-			
-			get() {
-				return this.tensor.data[this.flatIndex]
-			},
-			
-			set(value) {
-				this.tensor.data[this.flatIndex] = value
-			}
-		}
-	}
-	
-	_toConcreteRange(range) {
+
+    iterator() {
+        return {
+            tensor: this,
+            flatIndex: 0,
+
+            hasNext() {
+                return this.flatIndex < this.tensor.length
+            },
+
+            next() {
+                ++this.flatIndex
+            },
+
+            get() {
+                return this.tensor.data[this.flatIndex]
+            },
+
+            set(value) {
+                this.tensor.data[this.flatIndex] = value
+            }
+        }
+    }
+
+    _toConcreteRange(range) {
         if(this.rank != range.length)
             throw "rank not equal"
-		
-		let result = range.slice()
-		for(let i=0; i<range.length; ++i)
+
+        let result = range.slice()
+        for(let i=0; i<range.length; ++i)
             switch(range[i].length) {
                 case 0: result[i] = [0, this.shape[i]]; break
                 case 1: result[i] = [range[i][0], range[i][0]+1]; break
             }
-		return result
-	}
-	
-	rangeIterator(rangePerAxis) {
-		let conRange = this._toConcreteRange(rangePerAxis)
-		let initIndex = new Int32Array(this.rank)
-		for(let i=0; i<this.rank; ++i)
-			initIndex[i] = conRange[i][0]
-		
-		return {
-			tensor: this,
-			index: initIndex,
-			flatIndex: this.toFlatIndex(initIndex),
-			range: conRange,
-			
-			hasNext() {
-				return this.index[0] < this.range[0][1]
-			},
-			
-			next() {
-				++this.index[this.tensor.rank-1]
+        return result
+    }
 
-				for(let i=this.tensor.rank-1; i>=1; --i)
-					if(this.index[i] == this.range[i][1]) {
-						this.index[i] = this.range[i][0]
-						++this.index[i-1]
-					}
-				this.flatIndex = this.tensor.toFlatIndex(this.index)
-			},
-			
-			get() {
-				return this.tensor.data[this.flatIndex]
-			},
-			
-			set(value) {
-				this.tensor.data[this.flatIndex] = value
-			}
-		}
-	}
+    rangeIterator(rangePerAxis) {
+        let conRange = this._toConcreteRange(rangePerAxis)
+        let initIndex = new Int32Array(this.rank)
+        for(let i=0; i<this.rank; ++i)
+            initIndex[i] = conRange[i][0]
+
+        return {
+            tensor: this,
+            index: initIndex,
+            flatIndex: this.toFlatIndex(initIndex),
+            range: conRange,
+
+            hasNext() {
+                return this.index[0] < this.range[0][1]
+            },
+
+            next() {
+                ++this.index[this.tensor.rank-1]
+
+                for(let i=this.tensor.rank-1; i>=1; --i)
+                    if(this.index[i] == this.range[i][1]) {
+                        this.index[i] = this.range[i][0]
+                        ++this.index[i-1]
+                    }
+                this.flatIndex = this.tensor.toFlatIndex(this.index)
+            },
+
+            get() {
+                return this.tensor.data[this.flatIndex]
+            },
+
+            set(value) {
+                this.tensor.data[this.flatIndex] = value
+            }
+        }
+    }
 
     argmax(axis = -1) {
         if(axis == -1) {
@@ -408,13 +408,13 @@ class Tensor {
         let newShape = this.shape.slice()
         newShape[axis] = 1
         let result = new Tensor(newShape)
-		let resultIter = result.rangeIterator(new Array(this.rank).fill([]))
-		while(resultIter.hasNext()) {
-			let range = resultIter.index.map(i => [i])
-			range[axis] = []
-			resultIter.set(this.slice(range).argmax())
-			resultIter.next()
-		}
+        let resultIter = result.rangeIterator(new Array(this.rank).fill([]))
+        while(resultIter.hasNext()) {
+            let range = resultIter.index.map(i => [i])
+            range[axis] = []
+            resultIter.set(this.slice(range).argmax())
+            resultIter.next()
+        }
         return result
     }
 
@@ -458,7 +458,7 @@ class FullyConnected extends Layer {
     update() {
         this.optimizer.update([this.weight, this.bias], [this.gw, this.gb])
     }
-    
+
     setOptimizer(optimizer) {
         this.optimizer = optimizer
     }
@@ -470,12 +470,12 @@ class Convolution extends Layer {
         this.inputShape = inputShape
         this.kernelShape = kernelShape
         this.outputShape = [inputShape[0]-kernelShape[0]+1, inputShape[1]-kernelShape[1]+1, kernelShape[2]]
-        
+
         this.weight = new Tensor([1, kernelShape[0], kernelShape[1], inputShape[2], kernelShape[2]])
             .map(e => (Math.random()*2 - 1) / Math.sqrt(inputShape.reduce((a,b) => a*b, 1)), true)
         this.bias = new Tensor([1, 1, 1, 1, kernelShape[2]]).map(e => Math.random()*2 - 1, true)
     }
-    
+
     forward(x) {
         this.x = x
         let output = new Tensor([x.shape[0]].concat(this.outputShape))
@@ -487,7 +487,7 @@ class Convolution extends Layer {
                 let part = x.slice(range)
                 part.reshape(part.shape.concat(1))
                 let z = part.mul(this.weight).sum(1).sum(2).sum(3).add(this.bias)
-                
+
                 for(let i=0; i<x.shape[0]; ++i)
                     for(let ch=0; ch<this.outputShape[2]; ++ch)
                         output.data[output.toFlatIndex([i, r, c, ch])] = z.data[i*this.outputShape[2]+ch]
@@ -495,12 +495,12 @@ class Convolution extends Layer {
         }
         return output
     }
-    
+
     backward(g) {
         this.gw = Tensor.zerosLike(this.weight)
         this.gb = g.sum(0).sum(1).sum(2).reshape(this.bias.shape)
         let newG = Tensor.zeros([g.shape[0]].concat(this.inputShape))
-        
+
         let kernelRange = new Array(this.x.rank).fill([])
         let gRange = new Array(g.rank).fill([])
         for(let r=0; r<this.outputShape[0]; r++) {
@@ -514,24 +514,24 @@ class Convolution extends Layer {
                 let gPart = g.slice(gRange)
                 gPart.reshape([g.shape[0], 1, 1, 1, g.shape[3]])
                 this.gw.add( xPart.mul(gPart).sum(0).reshape(this.gw.shape), true )
-                
+
                 let newPart = gPart.mul(this.weight).sum(4)
-				let newGIter = newG.rangeIterator(kernelRange)
-				let newPIter = newPart.iterator()
-				while(newGIter.hasNext()) {
-					newGIter.set(newPIter.get())
-					newGIter.next()
-					newPIter.next()
-				}
+                let newGIter = newG.rangeIterator(kernelRange)
+                let newPIter = newPart.iterator()
+                while(newGIter.hasNext()) {
+                    newGIter.set(newPIter.get())
+                    newGIter.next()
+                    newPIter.next()
+                }
             }
         }
         return newG
     }
-    
+
     update() {
         this.optimizer.update([this.weight, this.bias], [this.gw, this.gb])
     }
-    
+
     setOptimizer(optimizer) {
         this.optimizer = optimizer
     }
@@ -565,11 +565,11 @@ class Reshape extends Layer {
         this.inputShape = inputShape
         this.outputShape = outputShape
     }
-    
+
     forward(x) {
         return x.copy().reshape([x.shape[0]].concat(this.outputShape))
     }
-    
+
     backward(g) {
         return g.copy().reshape([g.shape[0]].concat(this.inputShape))
     }
@@ -601,7 +601,7 @@ class SigmoidAndCrossEntropy extends Loss {
 
     backward() {
         return this.diff
-    }    
+    }
 }
 
 class SoftmaxAndCrossEntropy extends Loss {
@@ -621,7 +621,7 @@ class Optimizer {
         this.lr = learningRate
     }
     copy() {}
-    
+
     update(parameters, gradients) {}
 }
 
@@ -631,22 +631,22 @@ class Adam extends Optimizer {
         this.beta1 = beta1
         this.beta2 = beta2
     }
-    
+
     copy() {
         return new Adam(this.lr, this.beta1, this.beta2)
     }
-    
+
     update(ps, gs) {
         if(!this.ms) {
             this.ms = new Array(gs.length)
             this.vs = new Array(gs.length)
-            
+
             for(let i=0; i<gs.length; ++i) {
                 this.ms[i] = Tensor.zerosLike(gs[i])
                 this.vs[i] = Tensor.zerosLike(gs[i])
             }
         }
-        
+
         for(let i=0; i<gs.length; ++i) {
             this.ms[i].mul(this.beta1, true).add(gs[i].mul(1-this.beta1), true)
             this.vs[i].mul(this.beta2, true).add(gs[i].pow(2).mul(1-this.beta2, true), true)
@@ -661,7 +661,7 @@ class Sgd extends Optimizer {
     copy() {
         return new Sgd(this.lr)
     }
-    
+
     update(ps, gs) {
         for(let i=0; i<gs.length; ++i)
             ps[i].sub(gs[i].mul(this.lr, true), true)
@@ -680,7 +680,7 @@ class SequentialNetwork {
     setLoss(loss) {
         this.loss = loss
     }
-    
+
     setOptimizer(optimizer) {
         this.layers.forEach(layer => layer.setOptimizer(optimizer.copy()))
     }
@@ -693,7 +693,7 @@ class SequentialNetwork {
             for(let batchBegin=0; batchBegin<input.shape[0]; batchBegin+=batchSize) {
                 batchRangeX[0] = batchRangeY[0] = [batchBegin, Math.min(input.shape[0], batchBegin+batchSize)]
                 let x = input.slice(batchRangeX), y = target.slice(batchRangeY)
-                
+
                 this.layers.forEach(layer => x = layer.forward(x))
                 lossVal += this.loss.forward(x, y).sum()
                 let g = this.loss.backward()
@@ -722,7 +722,7 @@ class SequentialNetwork {
             let absDiff = Util.abs(this.predict(input).sub(target, true), true)
             return absDiff.map(e => e<0.5, true).mean()
         }
-        
+
         let p = this.predict(input).argmax(1)
         let t = target.argmax(1)
         return p.equal(t).mean()
