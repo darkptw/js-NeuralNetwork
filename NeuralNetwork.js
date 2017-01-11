@@ -519,7 +519,7 @@ class Convolution extends Layer {
                 let newGIter = newG.rangeIterator(kernelRange)
                 let newPIter = newPart.iterator()
                 while(newGIter.hasNext()) {
-                    newGIter.set(newPIter.get())
+                    newGIter.set(newGIter.get() + newPIter.get())
                     newGIter.next()
                     newPIter.next()
                 }
