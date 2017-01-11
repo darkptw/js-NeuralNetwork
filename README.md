@@ -85,10 +85,10 @@ let accuracy = net.evaluate(x, y)
 console.log('Training Accuracy = ' + (accuracy*100) + '%')
 ```
 ```
-[Epoch 1] loss: 478.9218714556846
-[Epoch 2] loss: 224.22441467690373
-[Epoch 3] loss: 54.15575810527514
-[Epoch 4] loss: 23.00490460639834
-[Epoch 5] loss: 20.197968472316845
-Training Accuracy = 99%
+[Epoch 1] loss: 588.4486172792967
+[Epoch 2] loss: 182.27383478803108
+[Epoch 3] loss: 87.64103121226469
+[Epoch 4] loss: 32.14701440724882
+[Epoch 5] loss: 16.742013356280808
+Training Accuracy = 100%
 ```
