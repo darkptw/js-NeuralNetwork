@@ -593,10 +593,10 @@ class SquaredError extends Loss {
 
 class SigmoidAndCrossEntropy extends Loss {
     forward(x, y) {
-        this.z = Util.sigmoid(x)
-        this.diff = this.z.sub(y)
-        return y.neg().mul(Util.log(this.z), true).add(
-            y.sub(1).mul( Util.log(this.z.neg().add(1, true)), true ), true )
+        let z = Util.sigmoid(x)
+        this.diff = z.sub(y)
+        return y.neg().mul(Util.log(z), true).add(
+            y.sub(1).mul(Util.log(z.neg().add(1, true)), true ), true)
     }
 
     backward() {
@@ -606,9 +606,9 @@ class SigmoidAndCrossEntropy extends Loss {
 
 class SoftmaxAndCrossEntropy extends Loss {
     forward(x, y) {
-        this.z = Util.softmax(x)
-        this.diff = this.z.sub(y)
-        return y.neg().mul( this.z.map(e => Math.log(e)), true )
+        let z = Util.softmax(x)
+        this.diff = z.sub(y)
+        return y.neg().mul(Util.log(z), true)
     }
 
     backward() {
