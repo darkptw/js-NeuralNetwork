@@ -38,6 +38,10 @@ class Util {
     static tanh(x, inplace = false) {
         return x.map(e => Math.tanh(e), inplace)
     }
+    
+    static relu(x, inplace = false) {
+        return x.map(e => (e > 0) ? e : 0, inplace)
+    }
 
     static softmax(x, inplace = false) {
         let expX = x.map(e => Math.exp(e), inplace)
@@ -556,6 +560,17 @@ class Tanh extends Layer {
 
     backward(g) {
         return g.mul( this.z.pow(2).neg(true).add(1, true) )
+    }
+}
+
+class Relu extends Layer {
+    forward(x) {
+        this.z = Util.relu(x)
+        return this.z
+    }
+
+    backward(g) {
+        return g.copy().elementWise((a,b) => (b > 0) ? a : 0, this.z, true)
     }
 }
 
