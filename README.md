@@ -52,7 +52,6 @@ net.addLayer(new Relu())
 net.addLayer(new Convolution([24, 24, 2], [5, 5, 3]))
 net.addLayer(new Relu())
 net.addLayer(new Reshape([20, 20, 3], [20*20*3]))
-net.addLayer(new Relu())
 net.addLayer(new FullyConnected(20*20*3, 10))
 
 net.setLoss(new SoftmaxAndCrossEntropy())
